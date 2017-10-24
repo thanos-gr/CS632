@@ -1,7 +1,7 @@
 # CS632
 Introduction to Deep Learning
 
-#Please when running the scripts try first $python myKnn.py -h (Part 1), where -h stands for help, a menu will appear guiding you for all possible options of running the script.
+#Please when running the scripts try first $python myknn.py -h (Part 1), where -h stands for help, a menu will appear guiding you for all possible options of running the script.
 $python parser.py -h (part 2) for options available for sencond part of the assignment.
 
 Part 1 Conseptual Part
@@ -20,4 +20,4 @@ Part 2 Conseptual Part
 
 1)One drawback for using BagOfWords is the fact that the only feature that derives out of the transformation is the frequency of the words within a sentence, most of the times an weak feature in predicting power. Also there is no relationship between the words in a sentence, something can be derived from a Glove model. One of the biggest strengths however is the simplicity of applying it to a dateset and get started without manually trying to find the predictive power of individual words.
 
-2)
+
