@@ -97,7 +97,7 @@ def build_model(word_index, w2v):
 		convs.append(l_pool)
 
 	merge = Merge(mode='concat', concat_axis=1)(convs)
-	Conv1= Conv1D(64, 5, padding='valid')(merge)
+	Conv1= Conv1D(128, 5, padding='valid')(merge)
 	Batch1 = BatchNormalization()(Conv1)
 	Relu1 = Activation('relu')(Batch1)
 	Pool1 = MaxPooling1D(5)(Relu1)
