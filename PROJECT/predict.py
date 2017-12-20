@@ -21,7 +21,7 @@ MAX_NUM_WORDS = 20000
 TRAIN_TEST = 40000
 EMBED_DIM = 200
 MODEL_WEIGHTS ='CNN-LSTM-weights.hdf5'
-raw_data = pd.read_csv(os.path.join(os.getcwd(),'Health.csv'), sep=',')
+raw_data = pd.read_csv(os.path.join(os.getcwd(),'Health_test.csv'), sep=',')
 
 def test_split():
 	texts = []
