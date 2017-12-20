@@ -10,7 +10,6 @@ from keras.preprocessing.text import Tokenizer, text_to_word_sequence
 from keras.utils import np_utils
 from keras.utils.np_utils import to_categorical
 from keras.callbacks import ModelCheckpoint
-from keras.optimizers import RMSprop,SGD
 from keras.layers.convolutional import Conv1D, MaxPooling1D
 from sklearn.preprocessing import LabelEncoder
 from nltk import tokenize
