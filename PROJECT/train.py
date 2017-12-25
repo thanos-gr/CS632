@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 import keras
 from keras.models import Model
-from keras.layers import Dense, Dropout, Activation, Flatten, Merge, Bidirectional,Input, Embedding, LSTM, BatchNormalization
+from keras.layers import Dense, Dropout, Activation, Flatten, Merge, Bidirectional,Input, Embedding, LSTM
 from keras.preprocessing.sequence import pad_sequences
 from keras.preprocessing.text import Tokenizer, text_to_word_sequence
 from keras.utils import np_utils
@@ -12,6 +12,7 @@ from keras.utils.np_utils import to_categorical
 from keras.callbacks import ModelCheckpoint
 from keras.layers.convolutional import Conv1D, MaxPooling1D
 from sklearn.preprocessing import LabelEncoder
+from sklearn.model_selection import StratifiedShuffleSplit
 from nltk import tokenize
 import gensim
 
@@ -20,18 +21,15 @@ os.environ['KERAS_BACKEND'] = 'tensorflow'
 MAX_SEQ_LEN = 1000
 MAX_NUM_WORDS = 20000
 EMBED_DIM = 200
-VAL_SPLIT = 0.25
-TRAIN_TEST = 40000
+VAL_SPLIT = 10000
+TRAIN_TEST = 0.1754878562403482
 raw_data = pd.read_csv(os.path.join(os.getcwd(),'Health.csv'), sep=',')
 
 def train_test():
 	texts = []
-	diagnosis = []
 	labels = []
 	for i in range(raw_data.Text.shape[0]):
-		texts.append(raw_data.Text[i])
-		diagnosis.append(tokenize.sent_tokenize(raw_data.Text[i]))
-		
+		texts.append(raw_data.Text[i].strip().lower())
 		labels.append(raw_data.Labels[i])
 
 	tokenizer = Tokenizer(num_words = MAX_NUM_WORDS)
@@ -50,23 +48,25 @@ def train_test():
 	print('Data Tensor Shape: ',data.shape)
 	print('Label Tensor Shape: ',labels.shape)
 
-	train = data[:TRAIN_TEST]
-	indices = np.arange(train.shape[0])
-	np.random.shuffle(indices)
-	train_data = train[indices]
-	train_labels = labels[indices]
-	val_samples = int(VAL_SPLIT* train_data.shape[0])
+	cv = StratifiedShuffleSplit(n_splits=5, test_size=TRAIN_TEST, random_state=0)
 
-	X_train = train_data[:-val_samples]
-	Y_train = train_labels[:-val_samples]
-	X_val = train_data[-val_samples:]
-	Y_val = train_labels[-val_samples:]
+        for train_index, test_index in cv.split(data, labels):
+                train_data, test_data = data[train_index], data[test_index]
+                train_labels, test_labels = labels[train_index], labels[test_index]
 
-	test = data[TRAIN_TEST:]
-	X_test = test
-	Y_test = labels[TRAIN_TEST:]
+        print('Train Index', train_index, 'Test Index', test_index)
 
-	print('Number of classes: ', labels.shape[1])
+        X_train = train_data[:-VAL_SPLIT]
+        Y_train = train_labels[:-VAL_SPLIT]
+        X_val = train_data[-VAL_SPLIT:]
+        Y_val = train_labels[-VAL_SPLIT:]
+
+        X_test = test_data
+        Y_test = test_labels
+
+        print('TRAIN SHAPE : ',X_train.shape, 'TEST SHAPE :', X_test.shape, 'VAL SHAPE :',  X_val.shape)
+        print('Y TRAIN SHAPE : ',Y_train.shape, 'TEST SHAPE :', Y_test.shape, 'VAL SHAPE :',  Y_val.shape)
+        print('Number of classes: ', labels.shape[1])
 
 	return X_train, Y_train, X_val, Y_val, X_test, Y_test, word_index
 
@@ -85,34 +85,29 @@ def build_model(word_index, w2v):
 	convs = []
 	filter_sizes = [3,4,5]
 
-	seq_input = Input(shape=(MAX_SEQ_LEN, ),dtype='int32')
+	seq_input = Input(shape=(MAX_SEQ_LEN, ),dtype='float32')
 	emb_seq = embedding_layer(seq_input)
 
 	for flt in filter_sizes:
 		conv = Conv1D(filters=128, kernel_size=flt)(emb_seq)
-		batch = BatchNormalization()(conv)
-		relu = Activation('relu')(batch)
+		relu = Activation('relu')(conv)
 		l_pool = MaxPooling1D(5)(relu)
 		convs.append(l_pool)
 
 	merge = Merge(mode='concat', concat_axis=1)(convs)
 	Conv1= Conv1D(128, 5, padding='valid')(merge)
-	Batch1 = BatchNormalization()(Conv1)
-	Relu1 = Activation('relu')(Batch1)
+	Relu1 = Activation('relu')(Conv1)
 	Pool1 = MaxPooling1D(5)(Relu1)
 	Conv2 = Conv1D(128, 5, padding='same')(Pool1)
-	Batch2 = BatchNormalization()(Conv2)
-	Relu2 = Activation('relu')(Batch2)
-	GPool = MaxPooling1D(35)(Relu2)
+	Relu2 = Activation('relu')(Conv2)
+	GPool = MaxPooling1D(30)(Relu2)
 	Lstm1 = Bidirectional(LSTM(256, return_sequences=True))(GPool)
-	Batch3 = BatchNormalization()(Lstm1)
-	Lstm2 = Bidirectional(LSTM(512, return_sequences=True))(Batch3)
-	Batch4 = BatchNormalization()(Lstm2)
-	Flat = Flatten()(Batch4)
+	Lstm2 = Bidirectional(LSTM(512, return_sequences=True))(Lstm1)
+	Flat = Flatten()(Lstm2)
 	Dense1 = Dense(512)(Flat)
 	Batch4 = BatchNormalization()(Dense1)
 	Relu4 = Activation('relu')(Batch4)
-	Drop = Dropout(0.5)(Relu4)
+	Drop = Dropout(0.2)(Relu4)
 	pred = Dense(23, activation='softmax')(Drop)
 
 	model = Model(seq_input, pred)
@@ -132,7 +127,7 @@ def main():
 	checkpoint = ModelCheckpoint(filepath, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
 	callbacks_list = [checkpoint]
 
-	model.fit(X_train, Y_train, batch_size=64, epochs=20,\
+	model.fit(X_train, Y_train, batch_size=32, epochs=200,\
 		 validation_data=(X_val, Y_val), callbacks=[checkpoint], verbose=1)
 
 	print("Training Complete.")
