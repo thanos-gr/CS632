@@ -1,4 +1,3 @@
-#!/home/thanos_kats/anaconda2/bin/python
 import os
 import pandas as pd
 import numpy as np
