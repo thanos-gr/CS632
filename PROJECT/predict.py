@@ -23,7 +23,7 @@ TRAIN_TEST = 40000
 EMBED_DIM = 200
 #Change the following to the weigths generated from train.py
 MODEL_WEIGHTS ='CNN-LSTM-weights.hdf5'
-raw_data = pd.read_csv(os.path.join(os.getcwd(),'Health_test.csv'), sep=',')
+raw_data = pd.read_csv(os.path.join(os.getcwd(),'Health.csv'), sep=',')
 
 def test_split():
 	texts = []
@@ -54,8 +54,8 @@ def test_split():
 	X_test = test_data
 	Y_test = test_labels
 	
-	print('Train Shape : ',X_train.shape, 'Test Shape :', X_test.shape, 'Val Shape :',  X_val.shape)
-        print('Y Train Shape : ',Y_train.shape, 'Test Shape :', Y_test.shape, 'Val Shape :',  Y_val.shape)
+	print('Data Test Shape :', X_test.shape)
+        print('Labels Test Shape :', Y_test.shape)
         print('Number of classes: ', labels.shape[1])
 	
 	return X_test, Y_test, word_index
