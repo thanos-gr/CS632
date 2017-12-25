@@ -95,10 +95,10 @@ def build_model(word_index, w2v):
 		convs.append(l_pool)
 
 	merge = Merge(mode='concat', concat_axis=1)(convs)
-	Conv1= Conv1D(128, 5, padding='valid')(merge)
+	Conv1= Conv1D(128, 5)(merge)
 	Relu1 = Activation('relu')(Conv1)
 	Pool1 = MaxPooling1D(5)(Relu1)
-	Conv2 = Conv1D(128, 5, padding='same')(Pool1)
+	Conv2 = Conv1D(128, 5)(Pool1)
 	Relu2 = Activation('relu')(Conv2)
 	GPool = MaxPooling1D(30)(Relu2)
 	Lstm1 = Bidirectional(LSTM(256, return_sequences=True))(GPool)
