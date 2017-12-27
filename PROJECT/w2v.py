@@ -4,17 +4,17 @@ import pandas as pd
 import gensim
 import keras
 import gensim
+import string
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from sklearn.decomposition import PCA
 from matplotlib import pyplot
 
-path = '/home/thanos_kats/DeepLearning/PROJECT/ohsumed-all/asdffa/'
+path = '/home/thanos_kats/DeepLearning/PROJECT/ohsumed-all/'
 
 path_flag = (False, True)[os.path.exists(path)]
 csv_flag = (False, True)[os.path.exists(os.path.join(os.getcwd(),"Health.csv"))]
-printos.pah.join(os.getcwd(),"Health.csv"))
-stop_words = set(stopwords.words('engish'))
+stop_words = set(stopwords.words('english'))
 
 dic_mapping = {
 	'C01':'Bacterial Infections and Mycoses',
@@ -55,9 +55,9 @@ def stopWords(text):
         filtered_sent = []
 	for sentence in text:
 		word_tokens = word_tokenize(sentence)
-		filt_sent = [w for w in word_tokens if not w in stop_words and w not in \
-			    ['%','=','(',')',','] and not re.search('[0-9]+',w)]
-		filtered_sent.extend(filt_sent)
+                word_tokens = [re.sub(r'[0-9]+',r'`n`',re.sub(r'[^\`\_0-9a-z\+\-\/\%]',' ', word.lower()))\
+			       for word in word_tokens if word not in ['--',',','+/-'] and word not in stop_words]
+                filtered_sent.extend(word_tokens)
 						
 	text_string = ' '.join(filtered_sent)
 	return text_string
@@ -87,12 +87,11 @@ def create_df():
 		print(True)
 		sentences = MySentences(os.getcwd(),'Health.csv')
 		print('Creating Model')
-		w2v = gensim.models.Word2Vec(sentences,iter=5, min_count=10, size=200, workers =5)
+		w2v = gensim.models.Word2Vec(sentences,iter=5, min_count=5, size=200, workers =5)
 		print(w2v)
 		print('Saving Model')
 		w2v.save('w2v_health.bin')
 	
 	
 if __name__ == '__main__':
-	df = pd.read_csv(os.path.join(os.getcwd(),'Health.csv'), sep=',')
-	print(len(df))
+	create_df()
