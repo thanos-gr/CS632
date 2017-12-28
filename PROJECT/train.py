@@ -142,7 +142,7 @@ def main():
 	checkpoint = ModelCheckpoint(filepath, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
 	callbacks_list = [checkpoint]
 
-	model.fit(X_train, Y_train, batch_size=64, epochs=200,\
+	model.fit(X_train, Y_train, batch_size=128, epochs=200,\
 		 validation_data=(X_val, Y_val), callbacks=[checkpoint], verbose=1)
 
 	print("Training Complete.")
