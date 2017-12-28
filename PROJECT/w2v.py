@@ -55,10 +55,10 @@ def stopWords(text):
         filtered_sent = []
 	for sentence in text:
 		word_tokens = word_tokenize(sentence)
-                word_tokens = [re.sub(r'[0-9]+',r'`n`',re.sub(r'[^\`\_0-9a-z\+\-\/\%]',' ', word.lower()))\
-			       for word in word_tokens if word not in ['--',',','+/-'] and word not in stop_words]
-                filtered_sent.extend(word_tokens)
-						
+		filt_sent = [w for w in word_tokens if not w in stop_words and w not in \
+-			    ['%','=','(',')',','] and not re.search('[0-9]+',w)]
+-		filtered_sent.extend(filt_sent)
+                				
 	text_string = ' '.join(filtered_sent)
 	return text_string
 
