@@ -9,6 +9,8 @@ promising results.
 Additionally, you can use the word2vec file I sent you form my Gmail account with a link to my Drive, since I was not
 able to upload it directly on the repository, or run the w2v.py to generate one with your specifications.
 
+Finally, you will have to untar the Health.csv file in order to run the scripts.
+
 Please reach out to me if you encouter any problems.
 
 Thank you for a wonderful semester!
