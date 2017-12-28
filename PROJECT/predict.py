@@ -80,32 +80,39 @@ def build_model(word_index, w2v):
 
 	for flt in filter_sizes:
 		conv = Conv1D(filters=128, kernel_size=flt)(emb_seq)
-		relu = Activation('relu')(conv)
-		l_pool = MaxPooling1D(5)(relu)
+		batch = BatchNormalization()(conv)
+		relu = Activation('relu')(batch)
+		drop = Dropout(0.25)(relu)
+		l_pool = MaxPooling1D(5)(drop)
 		convs.append(l_pool)
 
 	merge = Merge(mode='concat', concat_axis=1)(convs)
 	Conv1= Conv1D(128, 5)(merge)
-	Relu1 = Activation('relu')(Conv1)
-	Pool1 = MaxPooling1D(5)(Relu1)
-	Conv2 = Conv1D(128, 5)(Pool1)
-	Relu2 = Activation('relu')(Conv2)
-	GPool = MaxPooling1D(30)(Relu2)
-	Lstm1 = Bidirectional(LSTM(256, return_sequences=True))(GPool)
-	Lstm2 = Bidirectional(LSTM(512, return_sequences=True))(Lstm1)
+	Batch1 = BatchNormalization()(Conv1)
+	Relu1 = Activation('relu')(Batch1)
+	Drop1 = Dropout(0.25)(Relu1)
+	Pool1 = MaxPooling1D(5)(Drop1)
+	Conv2 = Conv1D(128, 5, padding='same')(Pool1)
+	Batch2 = BatchNormalization()(Conv2)
+	Relu2 = Activation('relu')(Batch2)
+	Drop2 = Dropout(0.25)(Relu2)
+	GPool = MaxPooling1D(30)(Drop2)
+	Lstm1 = Bidirectional(LSTM(128, return_sequences=True, activation='softsign', recurrent_dropout=0.25))(GPool)
+	Lstm2 = Bidirectional(LSTM(256, return_sequences=True, activation='softsign', recurrent_dropout=0.25))(Lstm1)
 	Flat = Flatten()(Lstm2)
 	Dense1 = Dense(512)(Flat)
-	Relu4 = Activation('relu')(Dense1)
-	Drop = Dropout(0.2)(Relu4)
-	pred = Dense(23, activation='softmax')(Drop)
-
+	Batch3 = BatchNormalization()(Dense1)
+	Relu4 = Activation('relu')(Batch3)
+	Drop3 = Dropout(0.5)(Relu4)
+	pred = Dense(23, activation='softmax')(Drop3)
+	
 	model = Model(seq_input, pred)
-
-	model.compile(optimizer='adam',
-              loss='categorical_crossentropy',
-              metrics=['accuracy'])
 	
 	model.summary()
+	opt = Adagrad()
+	model.compile(optimizer=opt,
+              loss='categorical_crossentropy',
+              metrics=['accuracy'])
 
 	return model
 
