@@ -3,12 +3,13 @@ import pandas as pd
 import numpy as np
 import keras
 from keras.models import Model
-from keras.layers import Dense, Dropout, Activation, Flatten, Merge, Bidirectional,Input, Embedding, LSTM
+from keras.layers import Dense, Dropout, Activation, Flatten, Merge, Bidirectional,Input, Embedding, LSTM, BatchNormalization
 from keras.preprocessing.sequence import pad_sequences
 from keras.preprocessing.text import Tokenizer, text_to_word_sequence
 from keras.utils import np_utils
 from keras.utils.np_utils import to_categorical
 from keras.callbacks import ModelCheckpoint
+from keras.optimizers import Adagrad
 from keras.layers.convolutional import Conv1D, MaxPooling1D
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import StratifiedShuffleSplit
@@ -20,8 +21,9 @@ os.environ['KERAS_BACKEND'] = 'tensorflow'
 MAX_SEQ_LEN = 1000
 MAX_NUM_WORDS = 20000
 EMBED_DIM = 200
-VAL_SPLIT = 10000
+VAL_SPLIT = 0.2128384130767921
 TRAIN_TEST = 0.1754878562403482
+NUM_CLASSES = 23
 raw_data = pd.read_csv(os.path.join(os.getcwd(),'Health.csv'), sep=',')
 
 def train_test():
@@ -52,13 +54,20 @@ def train_test():
         for train_index, test_index in cv.split(data, labels):
                 train_data, test_data = data[train_index], data[test_index]
                 train_labels, test_labels = labels[train_index], labels[test_index]
+	
+	css = StratifiedShuffleSplit(n_splits=5, test_size=VAL_SPLIT, random_state=1)
+
+        for sub_train_index, val_index in css.split(train_data, train_labels):
+                sub_train_data, val_data = data[sub_train_index], data[val_index]
+                sub_train_labels, val_labels = labels[sub_train_index], labels[val_index]
+
 
         print('Train Index', train_index, 'Test Index', test_index)
 
-        X_train = train_data[:-VAL_SPLIT]
-        Y_train = train_labels[:-VAL_SPLIT]
-        X_val = train_data[-VAL_SPLIT:]
-        Y_val = train_labels[-VAL_SPLIT:]
+        X_train = sub_train_data
+        Y_train = sub_train_labels
+        X_val = val_data
+        Y_val = val_labels
 
         X_test = test_data
         Y_test = test_labels
@@ -84,35 +93,42 @@ def build_model(word_index, w2v):
 	convs = []
 	filter_sizes = [3,4,5]
 
-	seq_input = Input(shape=(MAX_SEQ_LEN, ),dtype='float32')
+	seq_input = Input(shape=(MAX_SEQ_LEN, ),dtype='int32')
 	emb_seq = embedding_layer(seq_input)
 
 	for flt in filter_sizes:
 		conv = Conv1D(filters=128, kernel_size=flt)(emb_seq)
-		relu = Activation('relu')(conv)
-		l_pool = MaxPooling1D(5)(relu)
+		batch = BatchNormalization()(conv)
+		relu = Activation('relu')(batch)
+		drop = Dropout(0.25)(relu)
+		l_pool = MaxPooling1D(5)(drop)
 		convs.append(l_pool)
 
 	merge = Merge(mode='concat', concat_axis=1)(convs)
 	Conv1= Conv1D(128, 5)(merge)
-	Relu1 = Activation('relu')(Conv1)
-	Pool1 = MaxPooling1D(5)(Relu1)
-	Conv2 = Conv1D(128, 5)(Pool1)
-	Relu2 = Activation('relu')(Conv2)
-	GPool = MaxPooling1D(30)(Relu2)
-	Lstm1 = Bidirectional(LSTM(256, return_sequences=True))(GPool)
-	Lstm2 = Bidirectional(LSTM(512, return_sequences=True))(Lstm1)
+	Batch1 = BatchNormalization()(Conv1)
+	Relu1 = Activation('relu')(Batch1)
+	Drop1 = Dropout(0.25)(Relu1)
+	Pool1 = MaxPooling1D(5)(Drop1)
+	Conv2 = Conv1D(128, 5, padding='same')(Pool1)
+	Batch2 = BatchNormalization()(Conv2)
+	Relu2 = Activation('relu')(Batch2)
+	Drop2 = Dropout(0.25)(Relu2)
+	GPool = MaxPooling1D(30)(Drop2)
+	Lstm1 = Bidirectional(LSTM(128, return_sequences=True, activation='softsign', recurrent_dropout=0.25))(GPool)
+	Lstm2 = Bidirectional(LSTM(256, return_sequences=True, activation='softsign', recurrent_dropout=0.25))(Lstm1)
 	Flat = Flatten()(Lstm2)
 	Dense1 = Dense(512)(Flat)
-	Batch4 = BatchNormalization()(Dense1)
-	Relu4 = Activation('relu')(Batch4)
-	Drop = Dropout(0.2)(Relu4)
-	pred = Dense(23, activation='softmax')(Drop)
+	Batch3 = BatchNormalization()(Dense1)
+	Relu4 = Activation('relu')(Batch3)
+	Drop3 = Dropout(0.5)(Relu4)
+	pred = Dense(23, activation='softmax')(Drop3)
 
 	model = Model(seq_input, pred)
 
 	model.summary()
-	model.compile(optimizer='adam',
+	opt = Adagrad()
+	model.compile(optimizer=opt,
               loss='categorical_crossentropy',
               metrics=['accuracy'])
 
@@ -126,7 +142,7 @@ def main():
 	checkpoint = ModelCheckpoint(filepath, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
 	callbacks_list = [checkpoint]
 
-	model.fit(X_train, Y_train, batch_size=32, epochs=200,\
+	model.fit(X_train, Y_train, batch_size=64, epochs=200,\
 		 validation_data=(X_val, Y_val), callbacks=[checkpoint], verbose=1)
 
 	print("Training Complete.")
