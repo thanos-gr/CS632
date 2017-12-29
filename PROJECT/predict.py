@@ -18,8 +18,8 @@ import gensim
 
 os.environ['KERAS_BACKEND'] = 'tensorflow'
 
-MAX_SEQ_LEN = 400
-MAX_NUM_WORDS = 1000
+MAX_SEQ_LEN = 1000
+MAX_NUM_WORDS = 20000
 TRAIN_TEST = 0.1754878562403482
 EMBED_DIM = 200
 #Change the following to the weigths generated from train.py
