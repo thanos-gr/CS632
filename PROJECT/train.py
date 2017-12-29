@@ -111,11 +111,11 @@ def build_model(word_index, w2v):
 	Conv2 = Conv1D(128, 5, padding='same')(Pool1)
 	Relu2 = Activation('relu')(Conv2)
 	Drop2 = Dropout(0.25)(Relu2)
-	GPool = MaxPooling1D(30)(Drop2)
+	GPool = MaxPooling1D(5)(Drop2)
 	Lstm1 = Bidirectional(LSTM(128, return_sequences=True, activation='softsign', recurrent_dropout=0.25))(GPool)
-	Lstm2 = Bidirectional(LSTM(256, return_sequences=True, activation='softsign', recurrent_dropout=0.25))(Lstm1)
+	Lstm2 = Bidirectional(LSTM(128, return_sequences=True, activation='softsign', recurrent_dropout=0.25))(Lstm1)
 	Flat = Flatten()(Lstm2)
-	Dense1 = Dense(512)(Flat)
+	Dense1 = Dense(256)(Flat)
 	Relu3 = Activation('relu')(Dense1)
 	Drop3 = Dropout(0.5)(Relu3)
 	pred = Dense(23, activation='softmax')(Drop3)
@@ -123,8 +123,8 @@ def build_model(word_index, w2v):
 	model = Model(seq_input, pred)
 
 	model.summary()
-	opt = Adagrad()
-	model.compile(optimizer=opt,
+	
+	model.compile(optimizer='rmsprop',
               loss='categorical_crossentropy',
               metrics=['accuracy'])
 
